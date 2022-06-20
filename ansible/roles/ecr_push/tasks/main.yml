@@ -15,6 +15,7 @@
 - name: create ecr_repo
   ecs_ecr:
     name: "{{ imagename }}"
+    region: ap-south-1
   register: ec_repo
 
 # Push image into repo

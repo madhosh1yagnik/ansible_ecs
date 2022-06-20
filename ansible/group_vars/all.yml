@@ -2,13 +2,13 @@
 ansible_connection: local
 
 # Your aws keypair name 
-aws_keypair: marcioawsnew
+aws_keypair: ansible 
 
 # Region to create the vpc and subnets
-aws_region: us-west-2
+aws_region: ap-south-1
 
 # AMI image for the EC2 intances
-aws_ami_image: ami-01b70aea4161476b7
+aws_ami_image: ami-068257025f72f470d
 
 # EC2 instance type
 aws_instance_type: t2.micro

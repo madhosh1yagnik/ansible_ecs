@@ -9,6 +9,7 @@
 - name: Create subnet 1 in the VPC
   ec2_vpc_subnet:
     state: present
+    region: ap-south-1
     vpc_id: "{{ create_vpc.vpc.id }}"
     cidr: 10.0.1.0/24
     resource_tags:
@@ -19,6 +20,7 @@
 - name: Create subnet 2 in the VPC
   ec2_vpc_subnet:
     state: present
+    region: ap-south-1
     vpc_id: "{{ create_vpc.vpc.id }}"
     cidr: 10.0.2.0/24
     resource_tags:
