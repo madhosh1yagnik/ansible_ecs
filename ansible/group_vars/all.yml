@@ -8,7 +8,7 @@ aws_keypair: ansible
 aws_region: ap-south-1
 
 # AMI image for the EC2 intances
-aws_ami_image: ami-068257025f72f470d
+aws_ami_image: ami-08df646e18b182346
 
 # EC2 instance type
 aws_instance_type: t2.micro

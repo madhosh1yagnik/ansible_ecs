@@ -14,7 +14,20 @@
       - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
     state: present
 
-# ELB Target Group Creation
+      #- name: setup a target group for ELBelb_target_group:    
+      #name: "{{ new_cluster |replace('_', '-') }}"
+      #protocol: http
+      #region: ap-south-1
+      #target_type: ip
+      # health_check_port: 8448
+      #port: 80
+      #vpc_id: "{{ create_vpc.vpc.id }}"
+      #health_check_path: /
+      #successful_response_codes: "200"
+      #state: present
+      #register: create_elb_target_group
+
+      # ELB Target Group Creation
 - name: Create target group
   elb_target_group:
     name: "{{ imagename }}"
@@ -26,6 +39,25 @@
     health_check_path: /
     successful_response_codes: "200"
   register: create_elb_target_group
+
+    #- name: configure ELB for app
+    #elb_application_lb:
+    #state: present
+    #name: "{{ new_cluster |replace('_', '-') }}"
+    #scheme: internet-facing
+    #security_groups:
+    #  - "{{imagename}}_elb_security_group"
+    #region: ap-south-1
+    #subnets:
+    #      - "{{ create_subnet1.subnet.id }}"
+    #      - "{{ create_subnet2.subnet.id }}"
+    #listeners:
+    #  - Protocol: HTTP
+    #    Port: 80
+    #    DefaultActions:
+    #      - Type: forward
+    #        TargetGroupName: "{{ new_cluster |replace('_', '-') }}"
+    #register: create_elb
 
 # ELB Creation
 - name: Create elb
@@ -46,7 +78,7 @@
     state: present
   register: create_elb
 
-# Launch EC2 Instance
+    # Launch EC2 Instance
 - name: Launch EC2 Instance
   ec2:
     region: "{{ aws_region }}"
@@ -62,35 +94,94 @@
     assign_public_ip: yes
     user_data: |
                 #!/bin/bash
+                amazon-linux-extras install ecs
+                service docker start
+                systemctl start ecs
                 echo ECS_CLUSTER={{create_cluster.cluster.clusterName}} >> /etc/ecs/ecs.config
-    
+                curl --proto "https" -o "/tmp/ecs-anywhere-install.sh" "https://amazon-ecs-agent.s3.amazonaws.com/ecs-anywhere-install-latest.sh" && bash /tmp/ecs-anywhere-install.sh --region "ap-south-1" --cluster "simplepythonapp_cluster" --activation-id "0108456c-5a7c-4680-b84e-ae9d2b8fc535" --activation-code "ioiBD8d/ajXEiAQ4LcC3"
+   
 # Waiting EC2 join
-- name: Wait for ec2 insante register into ecs cluster
-  ecs_cluster:
-    name: "{{ new_cluster }}"
-    region: ap-south-1
-    state: has_instances
-    delay: 10
-    repeat: 20
+#- name: Wait for ec2 insante register into ecs cluster
+#  ecs_cluster:
+#    name: "{{ new_cluster }}"
+#    region: ap-south-1
+#    state: has_instances
+#    delay: 10
+#    repeat: 20
 
-# Task definition creation
+    #- name: Create a role
+    #iam_role:
+    #name: fargate-ecs
+    #assume_role_policy_document: "{{ lookup('file','./vars/role.json') }}"
+    #description: Allows ECS tasks to call AWS services on your behalf.
+    #register: ecs_role
+
+    #- name: Create task definition
+    #ecs_taskdefinition:
+    #family: "{{ imagename }}_task"
+    #region: ap-south-1
+    #task_role_arn: "{{ ecs_role.arn }}"
+    #execution_role_arn: "{{ ecs_role.arn }}"
+    #containers:
+      #- name: "{{ imagename }}"
+      #essential: true
+      #image: "{{ ec_repo.repository.repositoryUri }}:{{ imageversion }}"
+      #portMappings:
+      #- containerPort: 80
+      #  hostPort:      80
+      #logConfiguration:
+      #  logDriver: awslogs
+      #  options:
+      #    awslogs-group: "{{ new_cluster }}"
+      #    awslogs-region: ap-south-1
+      #    awslogs-stream-prefix: "{{ new_cluster }}-containers"
+      #launch_type: FARGATE
+      #cpu: 512
+      #memory: 1GB
+      #state: present
+      #network_mode: awsvpc
+
+
+                # Task definition creation
 - name: Create task definition
   ecs_taskdefinition:
+    region: ap-south-1
     containers:
     - name: "{{ imagename }}"
       cpu: 10
       essential: true
       image: "{{ ec_repo.repository.repositoryUri }}:{{ imageversion }}"
-      memory: 300
+      memory: 300      
       portMappings:
       - containerPort: 80
         hostPort: 0
     family: "{{ imagename }}_task"
-    state: present
+    state: present 
+
+
+      #- name: Create an ECS service
+      # ecs_service:
+      # state: present
+      #name: "{{ imagename }}_service"
+      #cluster: "{{ new_cluster }}"
+      #task_definition: "{{ imagename }}_task"
+      #launch_type: FARGATE
+      #load_balancers:
+      #- targetGroupArn: "{{ create_elb_target_group.target_group_arn }}"
+      #  containerName: "{{ imagename }}"
+      #  containerPort: 80
+      #network_configuration:
+      #assign_public_ip: yes
+      #subnets:
+      #- "{{ create_subnet1.subnet.id }}"
+      #- "{{ create_subnet2.subnet.id }}"
+      #desired_count: 1
+      #region: ap-south-1
 
 # Service Creation
 - name: Create ecs service
   ecs_service:
+    region: ap-south-1
     name: "{{ imagename }}_service"
     state: present
     cluster: "{{ new_cluster }}"
